@@ -180,6 +180,24 @@ button{font:inherit;color:inherit;border:0;padding:0;background:none;cursor:poin
 @keyframes turn{0%,30%{transform:rotate(-90deg)}60%,100%{transform:rotate(0)}}
 @media (max-height:700px){.coins{height:46px;font-size:23px}.coins .coin{width:36px;height:36px}.title{top:64px}.title h1{font-size:26px}.banner{font-size:30px;bottom:calc(var(--gb) + 124px)}.startbtn{height:54px;bottom:calc(var(--gb) + 44px)}.stars svg{width:48px;height:48px}.screen h1{font-size:36px}.fan{height:130px}}
 @media (prefers-reduced-motion:reduce){.rays{animation:none}}
+
+/* screens: never clip — content centred while it fits, scrolls when it doesn't */
+.screen{justify-content:flex-start}
+.screen>:first-child{margin-top:auto}.screen>:last-child{margin-bottom:auto}
+.screen>*{flex-shrink:0}
+/* nickname screen: follows the visible area above the on-screen keyboard */
+#ask{bottom:auto;height:var(--askH,100%);padding-top:calc(20px*var(--k));padding-bottom:calc(16px + var(--gb))}
+#ask .actions{max-width:100%}
+.actions{grid-template-columns:minmax(0,1fr)}
+.actions>*{min-width:0;width:100%}
+.screen>*{max-width:100%}
+@media (max-height:440px){#ask #askText{display:none}#ask{gap:8px;padding-top:12px}}
+
+@media (max-height:620px){#ask{gap:10px}#ask .amount{font-size:34px}#ask .amount .coin{width:38px;height:38px}#ask h2{font-size:22px}#ask p{font-size:14px}#ask .btn{height:48px;font-size:16px}#ask .field{height:50px}}
+#ask.kb{gap:8px;padding-top:12px;padding-bottom:12px}
+#ask.kb .amount{font-size:28px}#ask.kb .amount .coin{width:30px;height:30px}
+#ask.kb #askText{display:none}#ask.kb h2{font-size:20px}
+#ask.kb .btn{height:46px;font-size:16px}#ask.kb .field{height:48px}
 </style>
 </head>
 <body>
@@ -491,6 +509,24 @@ document.addEventListener('DOMContentLoaded', function () {
     hideAll(); $('ask').hidden = false;
     setTimeout(function () { try { $('nick').focus(); } catch (e) {} }, 250);
   });
+
+  /* keep the nickname screen above the on-screen keyboard (iOS + Android) */
+  (function () {
+    var vv = window.visualViewport, ask = $('ask');
+    function fit() {
+      if (!vv || ask.hidden) { ask.style.removeProperty('--askH'); ask.classList.remove('kb'); return; }
+      var r = game.getBoundingClientRect();
+      var visible = Math.min(r.height, vv.height + vv.offsetTop - r.top);
+      var kb = visible < r.height - 80;
+      ask.classList.toggle('kb', kb);
+      if (kb) ask.style.setProperty('--askH', Math.max(200, visible) + 'px'); else ask.style.removeProperty('--askH');
+      if (kb && document.activeElement === $('nick')) { try { window.scrollTo(0, 0); } catch (e) {} }
+    }
+    if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
+    window.addEventListener('resize', fit);
+    $('nick').addEventListener('focus', function () { setTimeout(fit, 60); setTimeout(fit, 350); });
+    $('nick').addEventListener('blur', function () { setTimeout(fit, 120); });
+  })();
   var NICK_A = ['lucky', 'neon', 'happy', 'cool', 'sunny', 'wild', 'fast', 'gold', 'pink', 'tiny', 'magic', 'chill', 'crazy', 'super'];
   var NICK_B = ['tiger', 'star', 'fox', 'panda', 'wave', 'vibes', 'queen', 'king', 'gamer', 'bunny', 'dragon', 'cookie', 'rocket', 'kitty'];
   function randomNick() {
